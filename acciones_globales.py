@@ -71,26 +71,30 @@ except TimeoutException:
 """ 
 Aunque el número de columnas sea 6, a nosotros solo 
 nos interesan la columna 1, la 2 y la 6, que corresponden a la fecha,
-a el precio  al cambio en %, respectivamente.
+al precio y al cambio en %, respectivamente.
 """
 cabeceras = driver.find_elements_by_xpath('//body/div[5]//thead/tr/th')
 n_columnas = len(cabeceras)
-
 DIAS_DE_2020 = 365
 DIAS_DE_FINDE_SEMANA = 118
 DIAS_SIN_FINDE_SEMANA = DIAS_DE_2020 - DIAS_DE_FINDE_SEMANA
 
-lista_columnas = []
+try:
+    primer_elemento = WebDriverWait(driver, 10).until(
+        ec.presence_of_element_located((By.XPATH, '//*[@id="leftColumn"]/div[9]/table[1]/tbody/tr[1]/td[1]')))
+finally:
+    lista_columnas = []
+    for fila in range(1, DIAS_SIN_FINDE_SEMANA + 1):
+        lista_columnas += [(driver.find_element_by_xpath(f'//*[@id="leftColumn"]/div[9]/table[1]/tbody/tr[{fila}]/td[1]').text,
+                            driver.find_element_by_xpath(f'//*[@id="leftColumn"]/div[9]/table[1]/tbody/tr[{fila}]/td[2]').text,
+                            driver.find_element_by_xpath(f'//*[@id="leftColumn"]/div[9]/table[1]/tbody/tr[{fila}]/td[6]').text)]
 
-for fila in range(1, DIAS_SIN_FINDE_SEMANA+1):
-    lista_columnas += [(driver.find_element_by_xpath(f'//table/tbody/tr[{fila}]/td[1]').text,
-                        driver.find_element_by_xpath(f'//table/tbody/tr[{fila}]/td[2]').text,
-                        driver.find_element_by_xpath(f'//table/tbody/tr[{fila}]/td[6]').text)]
+    with open('amundi-msci-wrld-ae-c.csv', 'w', newline='\n') as csvfile:
+        csvtool = csv.writer(csvfile, delimiter=';')
+        for elem in lista_columnas:
+            csvtool.writerow(elem)
 
-with open('amundi-msci-wrld-ae-c.csv', 'w', newline='\n') as csvfile:
-    csvtool = csv.writer(csvfile, delimiter=';')
-    for elem in lista_columnas:
-        csvtool.writerow(elem)
-
-time.sleep(10)
+time.sleep(5)
 driver.close()
+
+'''NOTA: HAY QUE TRATAR EL ANUNCIO QUE SALE A VECES, QUE ES NARANJA NEGRO Y BLANCO (SIGN UP)'''
