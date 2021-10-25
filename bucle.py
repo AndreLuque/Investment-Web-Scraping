@@ -40,6 +40,7 @@ for numero_enlace in range(len(lista_enlaces)):
     # Accedemos al historical data:
 
     try:
+        # esta primera part sirve para determinar que li[n] le corresponde a Historical Data
         texto = WebDriverWait(driver, 10).until(
             ec.presence_of_element_located((
                 By.XPATH,"//*[@id='pairSublinksLevel2']"))).text.split(sep='\n')
@@ -49,6 +50,7 @@ for numero_enlace in range(len(lista_enlaces)):
             if texto[contador] == "Historical Data":
                 encontrado = True
             contador += 1
+        # esta segunda parte lo selecciona/pulsa
         historical_data_button = WebDriverWait(driver, 10).until(
             ec.presence_of_element_located((By.XPATH, f"//*[@id='pairSublinksLevel2']/li[{contador}]/a")))
         historical_data_button.click()
