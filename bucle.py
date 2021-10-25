@@ -21,7 +21,7 @@ lista_enlaces = [
     "https://www.investing.com/etfs/ishares-global-corporate-bond-$",
     "https://www.investing.com/etfs/db-x-trackers-ii-global-sovereign-5",
     "https://www.investing.com/etfs/spdr-gold-trust",
-    "https://www.investing.com/indices/usdollar-historical-data"
+    "https://www.investing.com/indices/usdollar"
 ]
 
 for numero_enlace in range(len(lista_enlaces)):
