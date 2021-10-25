@@ -146,3 +146,5 @@ for numero_enlace in range(len(lista_enlaces)):
 
     time.sleep(5)
 driver.close()
+
+'''NOTA: HAY QUE TRATAR EL ANUNCIO QUE SALE A VECES, QUE ES NARANJA NEGRO Y BLANCO (SIGN UP)'''
