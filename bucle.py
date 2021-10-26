@@ -21,7 +21,7 @@ lista_enlaces = [
     "https://www.investing.com/etfs/ishares-global-corporate-bond-$",
     "https://www.investing.com/etfs/db-x-trackers-ii-global-sovereign-5",
     "https://www.investing.com/etfs/spdr-gold-trust",
-    "https://www.investing.com/indices/usdollar-historical-data"
+    "https://www.investing.com/indices/usdollar"
 ]
 
 for numero_enlace in range(len(lista_enlaces)):
@@ -38,39 +38,32 @@ for numero_enlace in range(len(lista_enlaces)):
         print("No han aparecido las cookies")
 
     # Accedemos al historical data:
-
     try:
-        # esta primera part sirve para determinar que li[n] le corresponde a Historical Data
-        texto = WebDriverWait(driver, 10).until(
-            ec.presence_of_element_located((
-                By.XPATH,"//*[@id='pairSublinksLevel2']"))).text.split(sep='\n')
-        encontrado = False
-        contador = 0
-        while not encontrado:
-            if texto[contador] == "Historical Data":
-                encontrado = True
-            contador += 1
-        # esta segunda parte lo selecciona/pulsa
-        historical_data_button = WebDriverWait(driver, 10).until(
-            ec.presence_of_element_located((By.XPATH, f"//*[@id='pairSublinksLevel2']/li[{contador}]/a")))
-        historical_data_button.click()
+        # no se muy bien por que pero la pagina del dolar tiene una estructura diferente para esta parte,
+        # este if gestiona dicha excepcion.
+        if lista_enlaces[numero_enlace] == "https://www.investing.com/indices/usdollar":
+            historical_data_button = WebDriverWait(driver, 10).until(
+                ec.presence_of_element_located(
+                    (By.XPATH, f'//*[@class="inv-link navbar_navbar-sub-item-link__1mznu"]')))
+            historical_data_button.click()
+        else:
+            # esta primera part sirve para determinar que li[n] le corresponde a Historical Data
+            texto = WebDriverWait(driver, 10).until(
+                ec.presence_of_element_located((
+                    By.XPATH,"//*[@id='pairSublinksLevel2']"))).text.split(sep='\n')
+            encontrado = False
+            contador = 0
+            while not encontrado:
+                if texto[contador] == "Historical Data":
+                    encontrado = True
+                contador += 1
+            # esta segunda parte lo selecciona/pulsa
+            historical_data_button = WebDriverWait(driver, 10).until(
+                ec.presence_of_element_located((By.XPATH, f"//*[@id='pairSublinksLevel2']/li[{contador}]/a")))
+            historical_data_button.click()
 
     except TimeoutException:
         print("No se ha podido acceder al historical data e 10 seg")
-    """
-    try:
-        encontrado = False
-        contador = 0
-        while not encontrado:
-            contador += 1
-            busqueda_button = WebDriverWait(driver, 10).until(
-                ec.presence_of_element_located((By.XPATH, f"//*[@id='pairSublinksLevel2']/li[{contador}]")))
-            if busqueda_button.text == "Historical Data":
-                encontrado = True
-        historical_data_button = WebDriverWait(driver, 10).until(
-            ec.presence_of_element_located((By.XPATH, f"//*[@id='pairSublinksLevel2']/li[{contador}]/a")))
-        historical_data_button.click()
-    """
 
     # Accedemos a la seleccion de fechas:
     try:
@@ -109,20 +102,21 @@ for numero_enlace in range(len(lista_enlaces)):
     except TimeoutException:
         print("La fecha final que quiere seleccionar no está disponible")
 
+    """ 
+    Hay mas columnas de las que nos interesan (5 o 6 dependeiendo de la pagina),
+    solo nos interesan las que corresponden a la fecha (columna 1 siempre),
+    al precio (columna 2 siempre) y al cambio en % (ultima columna siempre).
+    """
+
     # Averiguaremos cual es la columna de change%
     try:
-        indices_tablas = busqueda_button = WebDriverWait(driver, 10).until(
+        indices_tablas = WebDriverWait(driver, 10).until(
                 ec.presence_of_all_elements_located((By.XPATH, f'//*[@id="curr_table"]/thead/tr/th')))
         numero_columna_chage = len(indices_tablas)
 
     except TimeoutException:
         print("Las coulmas no han podido ser asignadas")
 
-    """ 
-    Aunque el número de columnas sea 6, a nosotros solo 
-    nos interesan la columna 1, la 2 y la 6, que corresponden a la fecha,
-    al precio y al cambio en %, respectivamente.
-    """
     cabeceras = driver.find_elements_by_xpath('//body/div[5]//thead/tr/th')
     n_columnas = len(cabeceras)
     DIAS_DE_2020 = 365
@@ -147,4 +141,5 @@ for numero_enlace in range(len(lista_enlaces)):
     time.sleep(5)
 driver.close()
 
-'''NOTA: HAY QUE TRATAR EL ANUNCIO QUE SALE A VECES, QUE ES NARANJA NEGRO Y BLANCO (SIGN UP)'''
+'''NOTA: HAY QUE TRATAR EL ANUNCIO QUE SALE A VECES, QUE ES NARANJA NEGRO Y BLANCO (SIGN UP), 
+pero este solo sale si mueves el ratón en la pgina de crom abierta'''
