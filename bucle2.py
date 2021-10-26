@@ -114,7 +114,7 @@ for numero_enlace in range(len(lista_enlaces)):
             csvtool = csv.writer(csvfile, delimiter=';')
             for elem in tabla:
                 elem = elem.split()
-                """ elem[0] = mes, elem[1] = dia(prosegido de una coma), elem[2] = año,
+                """ elem[0] = mes, elem[1] = dia(segido de una coma), elem[2] = año,
                  elem[3] = precio inicial, elem[-2] = volumen, elem[-1] = varición diaria"""
                 csvtool.writerow([elem[0] + " " + elem[1] + " " + elem[2], elem[3], elem[-2], elem[-1]])
 
