@@ -128,7 +128,7 @@ for numero_enlace in range(len(lista_enlaces)):
             Los acciones globales no tienen columna 'volumen' por eso se hace un if
             para rellenarla de guiones (al igual que hace la web con el dolar)
             """
-            if lista_nombre_csv[numero_enlace] == "amundi-msci-wrld-ae-c.csv":
+            if numero_enlace == 0:
                 for fila in tabla:
                     fila = fila.split()
                     """ fila[0] = mes, fila[1] = dia(seguido de una coma), fila[2] = año,
