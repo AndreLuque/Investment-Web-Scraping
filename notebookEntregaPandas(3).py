@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[148]:
+# In[245]:
 
 
 import pandas as pd
@@ -11,7 +11,7 @@ from typing import List, Dict, TypeVar
 import itertools as it
 
 
-# In[105]:
+# In[246]:
 
 
 # leer los csv y meterlos en un diccionario (es el que estoy usando)
@@ -23,7 +23,7 @@ datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
 datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
 
 
-# In[69]:
+# In[247]:
 
 
 def combinations_with_replacement(iterable, r):
@@ -45,7 +45,7 @@ def combinations_with_replacement(iterable, r):
         yield tuple(pool[i] for i in indices)
 
 
-# In[206]:
+# In[248]:
 
 
 def crearCarteras(sumaConponentesCartera: int, partes : int) -> List[Dict]:
@@ -62,21 +62,25 @@ def crearCarteras(sumaConponentesCartera: int, partes : int) -> List[Dict]:
     return lista
 
 
-# In[142]:
+# In[249]:
 
 
-def retabilidaddic(df):
+def retabilidadPorPartes(df):
     ganaciaIndice = {}
     for i in df:
         precioInicio = df[i].loc[len(df[i])-1,"Price"]
         precioFinal = df[i].loc[0,"Price"]
-        ganaciaIndice.update({i:((precioFinal-precioInicio)/(precioInicio))})
+        ganaciaIndice.update({i:(1+((precioFinal-precioInicio)/(precioInicio)))})
     return ganaciaIndice
+
+
+# In[250]:
+
 
 def calcularGanacia(carteras, df):
     # este metodo recive una cartera o lista de estas y calcula el porcentaje de ganacias
     ratioCien = 100/sum(df_carteras.iloc[1,:]) # esta variable sirve para compesar en el caso del que el sumatorio de los componentes de la carteran no sumen 100
-    ganaciaIndice = retabilidaddic(df)
+    ganaciaIndice = retabilidadPorPartes(df)
     nColumnas = len(carteras.loc[1,:])
     listaGanacias = []
     for fila in range(len(carteras.index)):
@@ -87,7 +91,7 @@ def calcularGanacia(carteras, df):
     return listaGanacias
 
 
-# In[147]:
+# In[251]:
 
 
 def rendimiento(carteras: pd.DataFrame, datos: Dict[str, pd.DataFrame]) ->         List[np.float64]:
@@ -123,16 +127,8 @@ def rendimiento(carteras: pd.DataFrame, datos: Dict[str, pd.DataFrame]) ->      
     return lista_rentabilidades
 
 
-# In[204]:
+# In[252]:
 
-
-def retabilidadPorPartes(df):
-    ganaciaIndice = {}
-    for i in df:
-        precioInicio = df[i].loc[len(df[i])-1,"Price"]
-        precioFinal = df[i].loc[0,"Price"]
-        ganaciaIndice.update({i:(1+((precioFinal-precioInicio)/(precioInicio)))})
-    return ganaciaIndice
 
 def rendimiento2(carteras: pd.DataFrame, datos: Dict[str, float]) ->         List[np.float64]:
     """
@@ -165,10 +161,45 @@ def rendimiento2(carteras: pd.DataFrame, datos: Dict[str, float]) ->         Lis
     return lista_rentabilidades
 
 
-# In[208]:
+# In[253]:
 
 
-partes = 5
+def rendimiento3(carteras: pd.DataFrame, datos: Dict[str, float]) ->         List[np.float64]:
+    """
+       Esta función recibe un dataframe de carteras y un diccionario con la
+       rentavilidad que tiene cada componente de las carteras
+    """
+    n_columnas = len(carteras.loc[1, :])
+    lista_rentabilidades = []
+    # Recorremos todas las carteras (1 cartera por fila)
+    for fila in range(len(carteras.index)):
+        importe_de_compra = 0
+        valor_actual = 0
+        carteraAnalizada = carteras.iloc[fila, :]
+        # Dentro de cada cartera recorremos los activos
+        for columna in range(n_columnas):
+            """
+            · Para cada activo sacamos la retavilidad de datos y lo mutiplicamos
+            por el precio inicial
+            · En importe_de_compra se va acumulando la inversón de cada activo
+            en la cartera
+            · En el valor_actual se acumula el dinero que se consigue tras retirar
+            la inversión
+            """
+            activo = carteras.columns[columna]
+            importe_de_compra += carteraAnalizada.iloc[columna]
+            valor_actual += carteraAnalizada.iloc[columna] * datos[carteras.columns[columna]]
+        
+        rentabilidad = ((valor_actual - importe_de_compra) / importe_de_compra) * 100
+        lista_rentabilidades += [round(rentabilidad, 4)]
+
+    return lista_rentabilidades
+
+
+# In[254]:
+
+
+partes = 20
 sumaCarteras = 100
 # estan ordenados por orden de creacion que coincide con el orden de arriva abajo en este notebook
 
@@ -202,3 +233,12 @@ df_carteras["RETURN"] = rendimiento2(df_carteras, retabilidadPorPartes(datasets_
 final = time.time()
 print(final - inicio)
 
+# creamos el dataFrame con las carteras
+df_carteras = pd.DataFrame(crearCarteras(sumaCarteras, partes))
+df_carteras
+
+# metodo 4
+inicio = time.time()
+df_carteras["RETURN"] = rendimiento3(df_carteras, retabilidadPorPartes(datasets_dic))
+final = time.time()
+print(final - inicio)
