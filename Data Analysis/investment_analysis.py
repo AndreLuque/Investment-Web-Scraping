@@ -11,9 +11,11 @@ def tratamientoDeNulos(df: pd.DataFrame) -> NoReturn:
     :return: Solo modifica el df
     """
     # El % de cambio se pone a cero ya que si el mercado está cerrado no hay cambio
-    df['%Change'].fillna('0%', inplace=True)
+    if '%Change' in df.columns:
+        df['%Change'].fillna('0%', inplace=True)
     # El volumne se pone a cero ya que si el mercado está cerrado no hay movimiento de acciones
-    df['Vol'].fillna(0., inplace=True)
+    if 'Vol' in df.columns:
+        df['Vol'].fillna(0., inplace=True)
     # Se rellena el precio con el valor del día anterior. EJ: si cierra el viernes a 150 pues sábado y domingo
     # se rellena a 150 el precio
     df.fillna(method='ffill', inplace=True)
@@ -99,6 +101,8 @@ datasets_dic.update({"CB": pd.read_csv('ishares-global-corporate-bond-$.csv', se
 datasets_dic.update({"PB": pd.read_csv('db-x-trackers-ii-global-sovereign-5.csv', sep=";")})
 datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
 datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
+# Convertimos la columna Vol del dollar en 0s, ya que su valor es - para toda fila
+datasets_dic['CA']['Vol'] = 0
 
 # Completamos los dataframes con los datos para que tengan todos los días del año:
 dates = pd. date_range('2020-01-01 00:00:00', periods=366)
