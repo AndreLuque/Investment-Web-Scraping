@@ -1,4 +1,3 @@
-import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -114,7 +113,6 @@ dates = pd.date_range('2020-01-01 00:00:00', periods=366)
 # Generamos un df con todas las fechas de 2020
 df_fechas = pd.DataFrame(dates, columns=['Date'])
 
-
 for activo in datasets_dic.keys():
     # Normalizamos el formato de las fechas, para que sean igules que las generadas en dates
     datasets_dic[activo].iloc[:, 0] = pd.to_datetime(datasets_dic[activo].iloc[:, 0], infer_datetime_format=True)
@@ -124,52 +122,13 @@ for activo in datasets_dic.keys():
     # Se tratan los nulos
     tratamientoDeNulos(datasets_dic[activo])
 
-
 # Creamos el dataFrame con las carteras
 activos = ['ST', 'CB', 'PB', 'GO', 'CA']
 suma_cartera = 100
 df_carteras = pd.DataFrame(crearCarteras(suma_cartera, activos))
 
-# Añadimos al dataframe de carteras (copia) la columna return con la rentabilidad/rendimiento
-df_carteras_rend = df_carteras.copy()
-df_carteras_rend["RETURN"] = rendimiento(df_carteras, datasets_dic)
-
-# Escribimos el dataframe en un csv
-df_carteras_rend.to_csv('portfolio_returns.csv', index=False)
 
 # PARTE DOS
-
-"""
-def volatilidadPorPartes(datos: Dict[str, pd.DataFrame]):
-    lVolatilidad = {}
-    for i in datos.keys():
-        dias = len(datos[i]["Price"])
-        promedio = sum(datos[i]["Price"])/dias
-        sumatorio = 0
-        for j in datos[i]["Price"]:
-            sumatorio += (j - promedio)**2
-        desviacionEstandarCuadrado = sumatorio/dias
-        lVolatilidad.update({i : [promedio, desviacionEstandarCuadrado]})
-    return lVolatilidad
-"""
-
-"""
-def volatilidad(carteras: pd.DataFrame, datos: Dict[str, pd.DataFrame]) -> List[np.float64]:
-    # no le uso esta qui por si acaso
-    diccionario = volatilidadPorPartes(datos)
-    lista_volatilidades = []
-    for indiceCartera in carteras.index:
-        desviacionEstandar = 0
-        promedio = 0
-        for parte in carteras.columns:
-            if carteras.loc[indiceCartera, parte] != 0:
-                desviacionEstandar += (diccionario[parte][1]*(carteras.loc[indiceCartera, parte]/100))**2
-                promedio += diccionario[parte][0]*carteras.loc[indiceCartera, parte]
-        desviacionEstandar = desviacionEstandar**(1/2)
-        lista_volatilidades += [desviacionEstandar/promedio*100]
-    return lista_volatilidades
-"""
-
 
 def participaciones_cartera(cartera: pd.Series, datos: Dict[str, pd.DataFrame]) -> Dict[str, float]:
     """
@@ -189,16 +148,16 @@ def desviacion_estandar(values: List[float], promedio: float) -> float:
     n_dias = len(values)
     sumatorio: float = 0
     for dia in range(n_dias):
-        sumatorio += (values[dia]-promedio)**2
+        sumatorio += (values[dia] - promedio) ** 2
 
-    return ((1/n_dias)*sumatorio)**(1/2)
+    return ((1 / n_dias) * sumatorio) ** (1 / 2)
 
 
 def volatilidad(values, promedio) -> float:
     """
     :return:  Calcula la volatilidad de una cartera a partir de la desviación estándar
     """
-    return round(((desviacion_estandar(values, promedio)/promedio)*100), 4)
+    return round(((desviacion_estandar(values, promedio) / promedio) * 100), 4)
 
 
 def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.DataFrame]):
@@ -208,7 +167,7 @@ def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.Data
     :return: Devuelve una lista con la volatilidad de cada cartera
     """
 
-    n_dias = len(datos["ST"]["Date"]) # nº de días == filas del df
+    n_dias = len(datos["ST"]["Date"])  # nº de días == filas del df
     volatility = []
 
     for indice_cartera in carteras.index:  # Recorremos las carteras
@@ -217,7 +176,7 @@ def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.Data
         cartera = carteras.loc[indice_cartera]
         promedio = 0
         participaciones = participaciones_cartera(cartera, datos)
-        values: List[float] = [0]*366
+        values: List[float] = [0] * 366
 
         for dia in range(n_dias):
             for activo in datos:
@@ -231,37 +190,82 @@ def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.Data
     return volatility
 
 
-# time1 = time.time()
-# print(len(calculo_lista_volatilidades(df_carteras, datasets_dic)))
-# time2 = time.time()
-# print(time2-time1)
+def main():
+    
+    # Con este while y el input permitimos al usuario elegir que parte de la práctica desea
+    introducido = ''
+    while introducido != '1' and introducido != '2':
+        print("Devuelva 1 para generar gráfico y csv con rentabilidad")
+        print("Devuelva 2 para  generar gráfico y csv rentabilidad y volatilidad")
+        introducido = input('Escriba aquí su elección:  ')
+
+        if introducido == '1':
+            # Añadimos al dataframe de carteras (copia) la columna return con la rentabilidad/rendimiento
+            df_carteras_rend = df_carteras.copy()
+            df_carteras_rend["RETURN"] = rendimiento(df_carteras, datasets_dic)
+
+            # Escribimos el dataframe en un csv
+            df_carteras_rend.to_csv('portfolio_returns.csv', index=False)
+
+            # Generación de gráfica para análisis
+            grafica1 = ''
+            while grafica1 != 'yes' and grafica1 != 'no':
+                grafica1 = str.lower(input('\n¿Desea ver la gráfica con el rendimiento de las carteras? (yes/no):  '))
+
+                if grafica1 == 'yes':
+                    # Plot para visualizar si es más probable encontrar carteras con rendimiento positivo o negativo
+                    x_values = range(1, 127)
+                    y_values = df_carteras_rend['RETURN']
+                    plt.plot(x_values, y_values, 'bo')
+                    plt.axhline(0, c='r')
+                    csfont = {'fontname': 'Comic Sans MS'}  # Para cambiar la fuente del título
+                    plt.title("RENDIMINETO DE LAS CARTERAS", csfont)
+                    plt.ylabel("Rendimiento")
+                    plt.show()
+
+        if introducido == "2":
+
+            # Añadimos al dataframe de carteras con rendimiento (copia) la columna VOLAT con la volatilidad
+            df_carteras_rend_vol = df_carteras.copy()
+
+            # Añadimos la columna RETURN al df
+            df_carteras_rend_vol["RETURN"] = rendimiento(df_carteras, datasets_dic)
+
+            # Añadimos la columna VOLAT al df
+            df_carteras_rend_vol["VOLAT"] = calculo_lista_volatilidades(df_carteras, datasets_dic)
+
+            # Generación de gráfica para análisis
+            grafica2 = ''
+            while grafica2 != 'yes' and grafica2 != 'no':
+                grafica2 = str.lower(input('\n¿Desea ver la gráfica comparando el rendimiento y la volatilidad? ('
+                                           'yes/no):  '))
+
+                if grafica2 == 'yes':
+                    csfont = {'fontname': 'Comic Sans MS'}  # Para cambiar la fuente del título
+                    plt.figure(figsize=(8, 8), tight_layout=True)  # Para fijar el tamaño de la pestaña
+
+                    # Hacemos un scatter plot
+                    plt.subplot(211)
+                    x_values = df_carteras_rend_vol['VOLAT']
+                    y_values = df_carteras_rend_vol['RETURN']
+                    plt.plot(x_values, y_values, 'go')
+                    plt.title("VOLATILIDAD VS RENDIMIENTO", csfont)
+                    plt.xlabel("Volatility")
+                    plt.ylabel("Return")
+
+                    # Realizamos un stem plot (mismos datos, otro tipo de visualización)
+                    plt.subplot(212)
+                    plt.stem(x_values, y_values)
+                    plt.xlabel("Volatility")
+                    plt.ylabel("Return")
+                    plt.show()
+
+            # Escribimos el dataframe en un csv
+            df_carteras_rend_vol.to_csv('portfolio_volatility.csv', index=False)
+
+        elif introducido != '1':
+            print('\nLas opciones son 1 o 2; lo que ha introducido no es válido')
 
 
-# Añadimos al dataframe de carteras con rendimiento (copia) la columna VOLAT con la volatilidad
-df_carteras_rend_vol = df_carteras_rend.copy()
-df_carteras_rend_vol["VOLAT"] = calculo_lista_volatilidades(df_carteras, datasets_dic)
-
-# Escribimos el dataframe en un csv
-df_carteras_rend_vol.to_csv('portfolio_volatility.csv', index=False)
-
-
-# ANÁLISIS DE LAS CARTERAS DE INVERSIÓN GENERADAS
-
-csfont = {'fontname': 'Comic Sans MS'}  # Para cambiar la fuente del título
-plt.figure(figsize=(12, 8), tight_layout=True) # Para fijar el tamaño de la pestaña
-
-# Hacemos un scatter plot
-plt.subplot(211)
-x_values = df_carteras_rend_vol['VOLAT']
-y_values = df_carteras_rend_vol['RETURN']
-plt.plot(x_values, y_values, 'go')
-plt.title("VOLATILIDAD VS RIESGO EN INVERSIÓN DE ACTIVOS", csfont)
-plt.xlabel("Volatility")
-plt.ylabel("Return")
-
-# Realizamos un stem plot (mismos datos, otro tipo de visualización)
-plt.subplot(212)
-plt.stem(x_values, y_values)
-plt.xlabel("Volatility")
-plt.ylabel("Return")
-plt.show()
+if __name__ == "__main__":
+    main()
