@@ -1,3 +1,5 @@
+import time
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -5,7 +7,7 @@ from typing import List, Dict, NoReturn
 import itertools as it
 
 
-# PARTE UNO
+# FUNCION PARA TRATAMIENTO DE CSVs OBTENIDOS DEL SCRAPING
 
 def tratamientoDeNulos(df: pd.DataFrame) -> NoReturn:
     """
@@ -26,6 +28,10 @@ def tratamientoDeNulos(df: pd.DataFrame) -> NoReturn:
     # siempre que sea nulo el precio del 01-01-2020
     df.loc[0, df.iloc[0, :].isnull()] = df.iloc[1, 1]
 
+
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+# FUNCIONES PARA PARTE OBLIGATORIA
 
 def crearCarteras(suma_componentes_cartera: int, activos: List[str]) -> List[Dict]:
     """
@@ -97,38 +103,8 @@ def rendimiento(carteras: pd.DataFrame, datos: Dict[str, pd.DataFrame]) -> List[
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 
-# Leemos los csv y meterlos en un diccionario
-datasets_dic = {}
-datasets_dic.update({"ST": pd.read_csv('amundi-msci-wrld-ae-c.csv', sep=";")})
-datasets_dic.update({"CB": pd.read_csv('ishares-global-corporate-bond-$.csv', sep=";")})
-datasets_dic.update({"PB": pd.read_csv('db-x-trackers-ii-global-sovereign-5.csv', sep=";")})
-datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
-datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
-# Convertimos la columna Vol del dollar en 0s, ya que su valor es - para toda fila
-datasets_dic['CA']['Vol'] = 0
-datasets_dic['ST']['Vol'] = 0
 
-# Completamos los dataframes con los datos para que tengan todos los días del año:
-dates = pd.date_range('2020-01-01 00:00:00', periods=366)
-# Generamos un df con todas las fechas de 2020
-df_fechas = pd.DataFrame(dates, columns=['Date'])
-
-for activo in datasets_dic.keys():
-    # Normalizamos el formato de las fechas, para que sean igules que las generadas en dates
-    datasets_dic[activo].iloc[:, 0] = pd.to_datetime(datasets_dic[activo].iloc[:, 0], infer_datetime_format=True)
-    # Hacemos la unión de dates y el df de cada activo; Las fechas que ya estaban se mantienen
-    # y las que no se añaden rellenando el resto de columnas con NaN (se ordenan de primer a último dia)
-    datasets_dic[activo] = pd.merge(df_fechas, datasets_dic[activo], on='Date', how='outer')
-    # Se tratan los nulos
-    tratamientoDeNulos(datasets_dic[activo])
-
-# Creamos el dataFrame con las carteras
-activos = ['ST', 'CB', 'PB', 'GO', 'CA']
-suma_cartera = 100
-df_carteras = pd.DataFrame(crearCarteras(suma_cartera, activos))
-
-
-# PARTE DOS
+# FUNCIONES PARA PARTE OPCIONAL
 
 def participaciones_cartera(cartera: pd.Series, datos: Dict[str, pd.DataFrame]) -> Dict[str, float]:
     """
@@ -190,8 +166,38 @@ def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.Data
     return volatility
 
 
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+# TRATAMIENTO DE CSV SACADOS DEL SCRAPING (NECESARIOS PARA AMBAS PARTES)
+
+# Leemos los csv y meterlos en un diccionario
+datasets_dic = {}
+datasets_dic.update({"ST": pd.read_csv('amundi-msci-wrld-ae-c.csv', sep=";")})
+datasets_dic.update({"CB": pd.read_csv('ishares-global-corporate-bond-$.csv', sep=";")})
+datasets_dic.update({"PB": pd.read_csv('db-x-trackers-ii-global-sovereign-5.csv', sep=";")})
+datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
+datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
+# Convertimos la columna Vol del dollar en 0s, ya que su valor es - para toda fila
+datasets_dic['CA']['Vol'] = 0
+datasets_dic['ST']['Vol'] = 0
+
+# Completamos los dataframes con los datos para que tengan todos los días del año:
+dates = pd.date_range('2020-01-01 00:00:00', periods=366)
+# Generamos un df con todas las fechas de 2020
+df_fechas = pd.DataFrame(dates, columns=['Date'])
+
+for activo in datasets_dic.keys():
+    # Normalizamos el formato de las fechas, para que sean igules que las generadas en dates
+    datasets_dic[activo].iloc[:, 0] = pd.to_datetime(datasets_dic[activo].iloc[:, 0],
+                                                     infer_datetime_format=True)
+    # Hacemos la unión de dates y el df de cada activo; Las fechas que ya estaban se mantienen
+    # y las que no se añaden rellenando el resto de columnas con NaN (se ordenan de primer a último dia)
+    datasets_dic[activo] = pd.merge(df_fechas, datasets_dic[activo], on='Date', how='outer')
+    # Se tratan los nulos
+    tratamientoDeNulos(datasets_dic[activo])
+
+
 def main():
-    
     # Con este while y el input permitimos al usuario elegir que parte de la práctica desea
     introducido = ''
     while introducido != '1' and introducido != '2':
@@ -200,12 +206,16 @@ def main():
         introducido = input('Escriba aquí su elección:  ')
 
         if introducido == '1':
+            # Creamos el dataFrame con las carteras
+            activos = ['ST', 'CB', 'PB', 'GO', 'CA']
+            suma_cartera = 100
+            df_carteras = pd.DataFrame(crearCarteras(suma_cartera, activos))
+
             # Añadimos al dataframe de carteras (copia) la columna return con la rentabilidad/rendimiento
-            df_carteras_rend = df_carteras.copy()
-            df_carteras_rend["RETURN"] = rendimiento(df_carteras, datasets_dic)
+            df_carteras["RETURN"] = rendimiento(df_carteras, datasets_dic)
 
             # Escribimos el dataframe en un csv
-            df_carteras_rend.to_csv('portfolio_returns.csv', index=False)
+            df_carteras.to_csv('portfolio_returns.csv', index=False)
 
             # Generación de gráfica para análisis
             grafica1 = ''
@@ -215,7 +225,7 @@ def main():
                 if grafica1 == 'yes':
                     # Plot para visualizar si es más probable encontrar carteras con rendimiento positivo o negativo
                     x_values = range(1, 127)
-                    y_values = df_carteras_rend['RETURN']
+                    y_values = df_carteras['RETURN']
                     plt.plot(x_values, y_values, 'bo')
                     plt.axhline(0, c='r')
                     csfont = {'fontname': 'Comic Sans MS'}  # Para cambiar la fuente del título
@@ -224,15 +234,14 @@ def main():
                     plt.show()
 
         if introducido == "2":
-
-            # Añadimos al dataframe de carteras con rendimiento (copia) la columna VOLAT con la volatilidad
-            df_carteras_rend_vol = df_carteras.copy()
-
-            # Añadimos la columna RETURN al df
-            df_carteras_rend_vol["RETURN"] = rendimiento(df_carteras, datasets_dic)
+            # Cargamos el dataframe de carteras con rendimiento (columna RETURN)
+            df_carteras_rend_vol = pd.read_csv('portfolio_returns.csv', sep=",")
 
             # Añadimos la columna VOLAT al df
-            df_carteras_rend_vol["VOLAT"] = calculo_lista_volatilidades(df_carteras, datasets_dic)
+            df_carteras_rend_vol["VOLAT"] = calculo_lista_volatilidades(df_carteras_rend_vol.iloc[:, 0:5], datasets_dic)
+
+            # Escribimos el dataframe en un csv
+            df_carteras_rend_vol.to_csv('portfolio_volatility.csv', index=False)
 
             # Generación de gráfica para análisis
             grafica2 = ''
@@ -259,9 +268,6 @@ def main():
                     plt.xlabel("Volatility")
                     plt.ylabel("Return")
                     plt.show()
-
-            # Escribimos el dataframe en un csv
-            df_carteras_rend_vol.to_csv('portfolio_volatility.csv', index=False)
 
         elif introducido != '1':
             print('\nLas opciones son 1 o 2; lo que ha introducido no es válido')
