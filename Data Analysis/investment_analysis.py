@@ -168,37 +168,42 @@ def calculo_lista_volatilidades(carteras: pd.DataFrame, datos: Dict[str, pd.Data
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 
-# TRATAMIENTO DE CSV SACADOS DEL SCRAPING (NECESARIOS PARA AMBAS PARTES)
-
-# Leemos los csv y meterlos en un diccionario
-datasets_dic = {}
-datasets_dic.update({"ST": pd.read_csv('amundi-msci-wrld-ae-c.csv', sep=";")})
-datasets_dic.update({"CB": pd.read_csv('ishares-global-corporate-bond-$.csv', sep=";")})
-datasets_dic.update({"PB": pd.read_csv('db-x-trackers-ii-global-sovereign-5.csv', sep=";")})
-datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
-datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
-# Convertimos la columna Vol del dollar en 0s, ya que su valor es - para toda fila
-datasets_dic['CA']['Vol'] = 0
-datasets_dic['ST']['Vol'] = 0
-
-# Completamos los dataframes con los datos para que tengan todos los días del año:
-dates = pd.date_range('2020-01-01 00:00:00', periods=366)
-# Generamos un df con todas las fechas de 2020
-df_fechas = pd.DataFrame(dates, columns=['Date'])
-
-for activo in datasets_dic.keys():
-    # Normalizamos el formato de las fechas, para que sean igules que las generadas en dates
-    datasets_dic[activo].iloc[:, 0] = pd.to_datetime(datasets_dic[activo].iloc[:, 0],
-                                                     infer_datetime_format=True)
-    # Hacemos la unión de dates y el df de cada activo; Las fechas que ya estaban se mantienen
-    # y las que no se añaden rellenando el resto de columnas con NaN (se ordenan de primer a último dia)
-    datasets_dic[activo] = pd.merge(df_fechas, datasets_dic[activo], on='Date', how='outer')
-    # Se tratan los nulos
-    tratamientoDeNulos(datasets_dic[activo])
-
 
 def main():
-    # Con este while y el input permitimos al usuario elegir que parte de la práctica desea
+    # TRATAMIENTO DE CSV SACADOS DEL SCRAPING (NECESARIOS PARA AMBAS PARTES)
+
+    # Leemos los csv y meterlos en un diccionario
+    datasets_dic = {}
+    datasets_dic.update({"ST": pd.read_csv('amundi-msci-wrld-ae-c.csv', sep=";")})
+    datasets_dic.update({"CB": pd.read_csv('ishares-global-corporate-bond-$.csv', sep=";")})
+    datasets_dic.update({"PB": pd.read_csv('db-x-trackers-ii-global-sovereign-5.csv', sep=";")})
+    datasets_dic.update({"GO": pd.read_csv('spdr-gold-trust.csv', sep=";")})
+    datasets_dic.update({"CA": pd.read_csv('usdollar.csv', sep=";")})
+    # Convertimos la columna Vol del dollar en 0s, ya que su valor es - para toda fila
+    datasets_dic['CA']['Vol'] = 0
+    datasets_dic['ST']['Vol'] = 0
+
+    # Completamos los dataframes con los datos para que tengan todos los días del año:
+    dates = pd.date_range('2020-01-01 00:00:00', periods=366)
+    # Generamos un df con todas las fechas de 2020
+    df_fechas = pd.DataFrame(dates, columns=['Date'])
+
+    for activo in datasets_dic.keys():
+        # Normalizamos el formato de las fechas, para que sean igules que las generadas en dates
+        datasets_dic[activo].iloc[:, 0] = pd.to_datetime(datasets_dic[activo].iloc[:, 0],
+                                                         infer_datetime_format=True)
+        # Hacemos la unión de dates y el df de cada activo; Las fechas que ya estaban se mantienen
+        # y las que no se añaden rellenando el resto de columnas con NaN (se ordenan de primer a último dia)
+        datasets_dic[activo] = pd.merge(df_fechas, datasets_dic[activo], on='Date', how='outer')
+        # Se tratan los nulos
+        tratamientoDeNulos(datasets_dic[activo])
+
+    # Modificación del us dollar para cumplir los requisitos
+    datasets_dic["CA"].loc[0, "Price"] = 100
+    for dia in datasets_dic["CA"].index:
+        datasets_dic["CA"].loc[dia, "Price"] = (datasets_dic["CA"].loc[dia, "Price"] / 100)
+
+    # EJECUCIÓN INDEPENDIENTE MEDIANTE INPUTS Y UN WHILE
     introducido = ''
     while introducido != '1' and introducido != '2':
         print("Devuelva 1 para generar gráfico y csv con rentabilidad")
@@ -229,7 +234,7 @@ def main():
                     plt.plot(x_values, y_values, 'bo')
                     plt.axhline(0, c='r')
                     csfont = {'fontname': 'Comic Sans MS'}  # Para cambiar la fuente del título
-                    plt.title("RENDIMINETO DE LAS CARTERAS", csfont)
+                    plt.title("RENDIMIENTO DE LAS CARTERAS", csfont)
                     plt.ylabel("Rendimiento")
                     plt.show()
 
